@@ -13,6 +13,7 @@
     randomMode: false,
     data: loadState(),
   };
+  state.showAnswer = Boolean(state.data.settings?.answerVisible);
 
   function defaultState() {
     return {
@@ -20,7 +21,7 @@
       weak: {},
       notes: {},
       quiz: {},
-      settings: { noteVisible: false },
+      settings: { noteVisible: false, answerVisible: false },
     };
   }
 
@@ -266,7 +267,6 @@
     if (!list.length) return;
     if (state.randomMode) state.currentTopic = Math.floor(Math.random() * list.length);
     else state.currentTopic = (state.currentTopic + step + list.length) % list.length;
-    state.showAnswer = false;
     render();
   }
 
@@ -298,8 +298,8 @@
 
   function bindEvents() {
     document.querySelectorAll("[data-view]").forEach((el) => el.addEventListener("click", () => { state.view = el.dataset.view; render(); }));
-    document.querySelectorAll("[data-topic-filter]").forEach((el) => el.addEventListener("click", () => { state.topicFilter = el.dataset.topicFilter; state.currentTopic = 0; state.showAnswer = false; render(); }));
-    document.querySelectorAll("[data-jump-topic-index]").forEach((el) => el.addEventListener("click", () => { state.currentTopic = Number(el.dataset.jumpTopicIndex) || 0; state.showAnswer = false; render(); }));
+    document.querySelectorAll("[data-topic-filter]").forEach((el) => el.addEventListener("click", () => { state.topicFilter = el.dataset.topicFilter; state.currentTopic = 0; render(); }));
+    document.querySelectorAll("[data-jump-topic-index]").forEach((el) => el.addEventListener("click", () => { state.currentTopic = Number(el.dataset.jumpTopicIndex) || 0; render(); }));
     const search = document.querySelector("[data-search]");
     if (search) search.addEventListener("input", (event) => { state.search = event.target.value; state.currentTopic = 0; render(); });
     const random = document.querySelector("[data-random]");
@@ -309,7 +309,12 @@
     document.querySelectorAll("[data-quiz-answer]").forEach((el) => el.addEventListener("click", () => submitQuiz(el.dataset.quizAnswer)));
     document.querySelectorAll("[data-action]").forEach((el) => el.addEventListener("click", () => {
       const action = el.dataset.action;
-      if (action === "toggleAnswer") { state.showAnswer = !state.showAnswer; render(); }
+      if (action === "toggleAnswer") {
+        state.showAnswer = !state.showAnswer;
+        state.data.settings.answerVisible = state.showAnswer;
+        saveState();
+        render();
+      }
       if (action === "toggleNotes") {
         state.data.settings.noteVisible = !state.data.settings.noteVisible;
         saveState();
