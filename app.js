@@ -21,7 +21,7 @@
       weak: {},
       notes: {},
       quiz: {},
-      settings: { noteVisible: false, answerVisible: false },
+      settings: { noteVisible: false, answerVisible: false, directoryCollapsed: false },
     };
   }
 
@@ -145,19 +145,67 @@
   }
 
   function renderSidebar(s) {
+    const directoryCollapsed = Boolean(state.data.settings?.directoryCollapsed);
     return `
       <aside class="sidebar">
-        <div class="brand"><div class="brand-mark">新</div><div><h1>新中特复习</h1><p>期末背诵与速测</p></div></div>
-        <button class="nav-button ${state.view === "study" ? "active" : ""}" data-view="study"><span>专题复习</span><span class="nav-count">${s.topics}</span></button>
-        <button class="nav-button ${state.view === "quiz" ? "active" : ""}" data-view="quiz"><span>关键词速测</span><span class="nav-count">${quiz.length}</span></button>
-        <button class="nav-button ${state.view === "overview" ? "active" : ""}" data-view="overview"><span>答案速览</span><span class="nav-count">${s.topics}</span></button>
-        <button class="nav-button ${state.view === "notebook" ? "active" : ""}" data-view="notebook"><span>薄弱点</span><span class="nav-count">${s.weak}</span></button>
-        <div class="section-title">专题目录</div>
-        <button class="nav-button ${state.topicFilter === "all" ? "active" : ""}" data-topic-filter="all"><span>全部专题</span><span class="nav-count">${topics.length}</span></button>
-        ${topics.map((topic) => `<button class="nav-button ${state.topicFilter === topic.id ? "active" : ""}" data-topic-filter="${topic.id}"><span>${topic.number}. ${topic.title}</span></button>`).join("")}
+        <div class="sidebar-fixed">
+          <div class="brand"><div class="brand-mark">新</div><div><h1>新中特复习</h1><p>期末背诵与速测</p></div></div>
+          ${renderActionDock(s)}
+          <div class="nav-group">
+            <button class="nav-button ${state.view === "study" ? "active" : ""}" data-view="study"><span>专题复习</span><span class="nav-count">${s.topics}</span></button>
+            <button class="nav-button ${state.view === "quiz" ? "active" : ""}" data-view="quiz"><span>关键词速测</span><span class="nav-count">${quiz.length}</span></button>
+            <button class="nav-button ${state.view === "overview" ? "active" : ""}" data-view="overview"><span>答案速览</span><span class="nav-count">${s.topics}</span></button>
+            <button class="nav-button ${state.view === "notebook" ? "active" : ""}" data-view="notebook"><span>薄弱点</span><span class="nav-count">${s.weak}</span></button>
+          </div>
+          <button class="nav-button directory-toggle" data-action="toggleDirectory"><span>${directoryCollapsed ? "展开专题目录" : "折叠专题目录"}</span><span class="nav-count">${topics.length}</span></button>
+        </div>
+        <div class="topic-directory ${directoryCollapsed ? "collapsed" : ""}">
+          <div class="section-title">专题目录</div>
+          <button class="nav-button ${state.topicFilter === "all" ? "active" : ""}" data-topic-filter="all"><span>全部专题</span><span class="nav-count">${topics.length}</span></button>
+          ${topics.map((topic) => `<button class="nav-button ${state.topicFilter === topic.id ? "active" : ""}" data-topic-filter="${topic.id}"><span>${topic.number}. ${topic.title}</span></button>`).join("")}
+        </div>
       </aside>
     `;
   }
+
+  function renderActionDock(s) {
+    const noteVisible = Boolean(state.data.settings?.noteVisible);
+    if (state.view === "study") {
+      return `
+        <section class="action-dock">
+          <h3>操作区</h3>
+          <div class="side-actions compact-actions">
+            <button class="btn primary-action" data-action="toggleAnswer">${state.showAnswer ? "隐藏答案" : "显示答案"}</button>
+            <button class="btn secondary" data-action="toggleNotes">${noteVisible ? "隐藏笔记" : "显示笔记"}</button>
+            <button class="btn secondary" data-action="prevTopic">上一题</button>
+            <button class="btn secondary" data-action="nextTopic">${state.randomMode ? "随机下一题" : "下一题"}</button>
+            <button class="btn secondary" data-action="mastered">标记掌握</button>
+            <button class="btn warning" data-action="weak">标记薄弱</button>
+          </div>
+        </section>
+      `;
+    }
+    if (state.view === "quiz") {
+      const q = currentQuiz();
+      return `
+        <section class="action-dock">
+          <h3>操作区</h3>
+          <div class="side-actions compact-actions">
+            <button class="btn secondary" data-action="prevQuiz">上一题</button>
+            <button class="btn secondary" data-action="nextQuiz">下一题</button>
+            ${q?.type === "fill" ? `<button class="btn primary-action" data-action="submitQuiz">提交填空</button>` : ""}
+          </div>
+        </section>
+      `;
+    }
+    return `
+      <section class="action-dock muted-dock">
+        <h3>操作区</h3>
+        <p>当前页面以阅读为主，操作按钮会在专题复习和关键词速测中固定显示。</p>
+      </section>
+    `;
+  }
+
 
   function renderTopbar(s) {
     return `
@@ -230,15 +278,6 @@
       const noteVisible = Boolean(state.data.settings?.noteVisible);
       const noteText = topic ? state.data.notes[topic.id] || "" : "";
       return `
-        <section class="panel"><h3>背诵操作</h3><div class="side-actions">
-          <button class="btn" data-action="toggleAnswer">${state.showAnswer ? "隐藏答案" : "显示答案"}</button>
-          <button class="btn secondary" data-action="toggleNotes">${noteVisible ? "隐藏笔记" : "显示笔记"}</button>
-          <button class="btn secondary" data-action="prevTopic">上一题</button>
-          <button class="btn secondary" data-action="nextTopic">${state.randomMode ? "随机下一题" : "下一题"}</button>
-          <button class="btn secondary" data-action="mastered">标记掌握</button>
-          <button class="btn warning" data-action="weak">标记薄弱</button>
-        </div></section>
-        ${topic ? `<section class="panel"><h3>题号索引</h3><div class="index-grid">${filteredTopics().map((item, index) => `<button class="index-btn ${item.id === topic.id ? "active" : ""}" data-jump-topic-index="${index}">${item.number}</button>`).join("")}</div></section>` : ""}
         ${topic ? `
           <section class="panel note-panel ${noteVisible ? "" : "collapsed"}">
             <div class="panel-title-row">
@@ -253,10 +292,12 @@
       `;
     }
     if (state.view === "quiz") {
-      return `<section class="panel"><h3>速测操作</h3><div class="side-actions"><button class="btn secondary" data-action="prevQuiz">上一题</button><button class="btn secondary" data-action="nextQuiz">下一题</button></div></section>`;
+      const answered = Object.keys(state.data.quiz).length;
+      return `<section class="panel"><h3>速测进度</h3><p>已完成 ${answered} / ${quiz.length} 题。上一题、下一题和填空提交按钮已固定到左侧顶部。</p></section>`;
     }
     return `<section class="panel"><h3>复习建议</h3><p>先用“专题复习”背诵主观题，再用“关键词速测”检查核心概念，最后用“答案速览”考前通读。</p></section>`;
   }
+
 
   function topicById(id) {
     return topics.find((topic) => topic.id === id) || topics[0];
@@ -317,6 +358,11 @@
       }
       if (action === "toggleNotes") {
         state.data.settings.noteVisible = !state.data.settings.noteVisible;
+        saveState();
+        render();
+      }
+      if (action === "toggleDirectory") {
+        state.data.settings.directoryCollapsed = !state.data.settings.directoryCollapsed;
         saveState();
         render();
       }

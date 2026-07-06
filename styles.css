@@ -20,7 +20,7 @@ body {
 button, input, textarea, select { font: inherit; }
 .shell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 340px;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
   gap: 16px;
   min-height: 100vh;
   padding: 16px;
@@ -37,7 +37,52 @@ button, input, textarea, select { font: inherit; }
   background: var(--panel);
   box-shadow: var(--shadow);
 }
-.sidebar { padding: 14px; }
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-fixed {
+  flex: 0 0 auto;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.topic-directory {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 14px 14px;
+}
+.topic-directory.collapsed { display: none; }
+.nav-group { margin-bottom: 8px; }
+.directory-toggle {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+}
+.action-dock {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+.action-dock h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.action-dock p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.compact-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.compact-actions .primary-action {
+  grid-column: 1 / -1;
+}
 .brand { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
 .brand-mark {
   width: 42px; height: 42px; display: grid; place-items: center;
@@ -126,11 +171,13 @@ button, input, textarea, select { font: inherit; }
 .index-btn.active, .index-btn:hover { border-color: var(--primary); background: var(--soft); color: var(--primary); }
 cite { font-style: normal; color: var(--primary); font-weight: 700; }
 @media (max-width: 1180px) {
-  .shell { grid-template-columns: 240px minmax(0, 1fr); }
+  .shell { grid-template-columns: 280px minmax(0, 1fr); }
   .inspector { position: static; grid-column: 1 / -1; height: auto; }
 }
 @media (max-width: 760px) {
-  .shell, .stat-grid, .filters { grid-template-columns: 1fr; padding: 10px; }
-  .sidebar, .inspector { position: static; height: auto; }
+  .shell { grid-template-columns: 1fr; padding: 10px; }
+  .stat-grid, .filters { grid-template-columns: 1fr; }
+  .sidebar { position: sticky; top: 10px; z-index: 5; height: auto; max-height: calc(100vh - 20px); }
+  .inspector { position: static; height: auto; }
   .topbar { align-items: flex-start; flex-direction: column; }
 }
