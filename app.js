@@ -21,7 +21,7 @@
       weak: {},
       notes: {},
       quiz: {},
-      settings: { noteVisible: false, answerVisible: false, directoryCollapsed: false },
+      settings: { noteVisible: false, answerVisible: false },
     };
   }
 
@@ -136,7 +136,7 @@
         ${renderSidebar(s)}
         <main class="workspace">
           ${renderTopbar(s)}
-          ${state.view === "study" ? renderStudy() : state.view === "quiz" ? renderQuiz() : state.view === "overview" ? renderOverview() : renderNotebook()}
+          ${renderStudy()}
         </main>
         <aside class="inspector">${renderInspector()}</aside>
       </div>
@@ -145,24 +145,11 @@
   }
 
   function renderSidebar(s) {
-    const directoryCollapsed = Boolean(state.data.settings?.directoryCollapsed);
     return `
       <aside class="sidebar">
         <div class="sidebar-fixed">
-          <div class="brand"><div class="brand-mark">新</div><div><h1>新中特复习</h1><p>期末背诵与速测</p></div></div>
+          <div class="brand"><div class="brand-mark">新</div><div><h1>新中特复习</h1><p>期末背诵与记录</p></div></div>
           ${renderActionDock(s)}
-          <div class="nav-group">
-            <button class="nav-button ${state.view === "study" ? "active" : ""}" data-view="study"><span>专题复习</span><span class="nav-count">${s.topics}</span></button>
-            <button class="nav-button ${state.view === "quiz" ? "active" : ""}" data-view="quiz"><span>关键词速测</span><span class="nav-count">${quiz.length}</span></button>
-            <button class="nav-button ${state.view === "overview" ? "active" : ""}" data-view="overview"><span>答案速览</span><span class="nav-count">${s.topics}</span></button>
-            <button class="nav-button ${state.view === "notebook" ? "active" : ""}" data-view="notebook"><span>薄弱点</span><span class="nav-count">${s.weak}</span></button>
-          </div>
-          <button class="nav-button directory-toggle" data-action="toggleDirectory"><span>${directoryCollapsed ? "展开专题目录" : "折叠专题目录"}</span><span class="nav-count">${topics.length}</span></button>
-        </div>
-        <div class="topic-directory ${directoryCollapsed ? "collapsed" : ""}">
-          <div class="section-title">专题目录</div>
-          <button class="nav-button ${state.topicFilter === "all" ? "active" : ""}" data-topic-filter="all"><span>全部专题</span><span class="nav-count">${topics.length}</span></button>
-          ${topics.map((topic) => `<button class="nav-button ${state.topicFilter === topic.id ? "active" : ""}" data-topic-filter="${topic.id}"><span>${topic.number}. ${topic.title}</span></button>`).join("")}
         </div>
       </aside>
     `;
@@ -170,47 +157,25 @@
 
   function renderActionDock(s) {
     const noteVisible = Boolean(state.data.settings?.noteVisible);
-    if (state.view === "study") {
-      return `
-        <section class="action-dock">
-          <h3>操作区</h3>
-          <div class="side-actions compact-actions">
-            <button class="btn primary-action" data-action="toggleAnswer">${state.showAnswer ? "隐藏答案" : "显示答案"}</button>
-            <button class="btn secondary" data-action="toggleNotes">${noteVisible ? "隐藏笔记" : "显示笔记"}</button>
-            <button class="btn secondary" data-action="prevTopic">上一题</button>
-            <button class="btn secondary" data-action="nextTopic">${state.randomMode ? "随机下一题" : "下一题"}</button>
-            <button class="btn secondary" data-action="mastered">标记掌握</button>
-            <button class="btn warning" data-action="weak">标记薄弱</button>
-          </div>
-        </section>
-      `;
-    }
-    if (state.view === "quiz") {
-      const q = currentQuiz();
-      return `
-        <section class="action-dock">
-          <h3>操作区</h3>
-          <div class="side-actions compact-actions">
-            <button class="btn secondary" data-action="prevQuiz">上一题</button>
-            <button class="btn secondary" data-action="nextQuiz">下一题</button>
-            ${q?.type === "fill" ? `<button class="btn primary-action" data-action="submitQuiz">提交填空</button>` : ""}
-          </div>
-        </section>
-      `;
-    }
     return `
-      <section class="action-dock muted-dock">
+      <section class="action-dock">
         <h3>操作区</h3>
-        <p>当前页面以阅读为主，操作按钮会在专题复习和关键词速测中固定显示。</p>
+        <div class="side-actions compact-actions">
+          <button class="btn primary-action" data-action="toggleAnswer">${state.showAnswer ? "隐藏答案" : "显示答案"}</button>
+          <button class="btn secondary" data-action="toggleNotes">${noteVisible ? "隐藏笔记" : "显示笔记"}</button>
+          <button class="btn secondary" data-action="prevTopic">上一题</button>
+          <button class="btn secondary" data-action="nextTopic">${state.randomMode ? "随机下一题" : "下一题"}</button>
+          <button class="btn secondary" data-action="mastered">标记掌握</button>
+          <button class="btn warning" data-action="weak">标记薄弱</button>
+        </div>
       </section>
     `;
   }
 
-
   function renderTopbar(s) {
     return `
       <section class="topbar">
-        <div><h2>${state.view === "study" ? "专题复习" : state.view === "quiz" ? "关键词速测" : state.view === "overview" ? "答案速览" : "薄弱点整理"}</h2><p>基于 2026.7 全日制新中特复习提纲，适合背诵、速览和考前自测。</p></div>
+        <div><h2>背诵练习</h2><p>基于 2026.7 全日制新中特复习提纲，保留核心背诵、答案显示和个人笔记功能。</p></div>
         <div class="chips"><span class="chip primary">掌握 ${s.progress}%</span><span class="chip">薄弱 ${s.weak}</span></div>
       </section>
       <section class="stat-grid">
@@ -239,65 +204,24 @@
     `;
   }
 
-  function renderQuiz() {
-    const q = currentQuiz();
-    if (!q) return "";
-    const result = state.data.quiz[q.id];
-    return `
-      <article class="card">
-        <div class="question-head"><div class="chips"><span class="chip primary">${q.type === "choice" ? "选择题" : "填空题"}</span><span class="chip">${h(topicById(q.topicId).title)}</span></div><div class="chip">${state.currentQuiz + 1} / ${quiz.length}</div></div>
-        <h3>${h(q.prompt)}</h3>
-        ${q.type === "choice" ? `<div class="option-list">${q.options.map((option) => `<button class="option" data-quiz-answer="${h(option)}">${h(option)}</button>`).join("")}</div>` : `<textarea class="answer-box" rows="3" data-quiz-free placeholder="写出关键词"></textarea><div class="actions"><button class="btn" data-action="submitQuiz">提交</button></div>`}
-        ${result ? `<div class="feedback ${result.correct ? "correct" : "wrong"}">${result.correct ? "回答正确。" : "未命中标准答案。"} 标准答案：${h(q.answer)}<br>${h(q.explanation)}</div>` : ""}
-      </article>
-    `;
-  }
-
-  function renderOverview() {
-    return `
-      <section class="overview-list">
-        ${topics.map((topic) => `
-          <details class="overview-item">
-            <summary><span>${topic.number}. ${h(topic.title)}</span><span class="chip">${topic.keywords[0] || "重点"}</span></summary>
-            <div class="answer-preview">${md(topic.body)}</div>
-          </details>
-        `).join("")}
-      </section>
-    `;
-  }
-
-  function renderNotebook() {
-    const weak = topics.filter((topic) => state.data.weak[topic.id]);
-    if (!weak.length) return `<article class="card"><h3>暂无薄弱点</h3><p>在专题复习中点击“标记薄弱”后，这里会集中显示。</p></article>`;
-    return `<section class="overview-list">${weak.map((topic) => `<details class="overview-item" open><summary><span>${topic.number}. ${h(topic.title)}</span></summary><div class="answer-preview">${md(topic.body)}</div></details>`).join("")}</section>`;
-  }
-
   function renderInspector() {
-    if (state.view === "study") {
-      const topic = currentTopic();
-      const noteVisible = Boolean(state.data.settings?.noteVisible);
-      const noteText = topic ? state.data.notes[topic.id] || "" : "";
-      return `
-        ${topic ? `
-          <section class="panel note-panel ${noteVisible ? "" : "collapsed"}">
-            <div class="panel-title-row">
-              <h3>复习笔记</h3>
-              <span class="save-hint">自动本地保存</span>
-            </div>
-            ${noteVisible
-              ? `<textarea class="note-box" data-note rows="8" placeholder="写下自己提炼的关键词、口诀、易混点">${h(noteText)}</textarea><p class="note-tip">当前专题笔记只保存在本机浏览器，不会上传。</p>`
-              : `<p class="note-hidden">笔记已隐藏，做题时不会占用视线。</p>`}
-          </section>
-        ` : ""}
-      `;
-    }
-    if (state.view === "quiz") {
-      const answered = Object.keys(state.data.quiz).length;
-      return `<section class="panel"><h3>速测进度</h3><p>已完成 ${answered} / ${quiz.length} 题。上一题、下一题和填空提交按钮已固定到左侧顶部。</p></section>`;
-    }
-    return `<section class="panel"><h3>复习建议</h3><p>先用“专题复习”背诵主观题，再用“关键词速测”检查核心概念，最后用“答案速览”考前通读。</p></section>`;
+    const topic = currentTopic();
+    const noteVisible = Boolean(state.data.settings?.noteVisible);
+    const noteText = topic ? state.data.notes[topic.id] || "" : "";
+    return `
+      ${topic ? `
+        <section class="panel note-panel ${noteVisible ? "" : "collapsed"}">
+          <div class="panel-title-row">
+            <h3>复习笔记</h3>
+            <span class="save-hint">自动本地保存</span>
+          </div>
+          ${noteVisible
+            ? `<textarea class="note-box" data-note rows="8" placeholder="写下自己提炼的关键词、口诀、易混点">${h(noteText)}</textarea><p class="note-tip">当前专题笔记只保存在本机浏览器，不会上传。</p>`
+            : `<p class="note-hidden">笔记已隐藏，做题时不会占用视线。</p>`}
+        </section>
+      ` : ""}
+    `;
   }
-
 
   function topicById(id) {
     return topics.find((topic) => topic.id === id) || topics[0];
@@ -338,16 +262,12 @@
   }
 
   function bindEvents() {
-    document.querySelectorAll("[data-view]").forEach((el) => el.addEventListener("click", () => { state.view = el.dataset.view; render(); }));
-    document.querySelectorAll("[data-topic-filter]").forEach((el) => el.addEventListener("click", () => { state.topicFilter = el.dataset.topicFilter; state.currentTopic = 0; render(); }));
-    document.querySelectorAll("[data-jump-topic-index]").forEach((el) => el.addEventListener("click", () => { state.currentTopic = Number(el.dataset.jumpTopicIndex) || 0; render(); }));
     const search = document.querySelector("[data-search]");
     if (search) search.addEventListener("input", (event) => { state.search = event.target.value; state.currentTopic = 0; render(); });
     const random = document.querySelector("[data-random]");
     if (random) random.addEventListener("change", (event) => { state.randomMode = event.target.checked; });
     const note = document.querySelector("[data-note]");
     if (note) note.addEventListener("input", (event) => { const topic = currentTopic(); if (topic) { state.data.notes[topic.id] = event.target.value; saveState(); } });
-    document.querySelectorAll("[data-quiz-answer]").forEach((el) => el.addEventListener("click", () => submitQuiz(el.dataset.quizAnswer)));
     document.querySelectorAll("[data-action]").forEach((el) => el.addEventListener("click", () => {
       const action = el.dataset.action;
       if (action === "toggleAnswer") {
@@ -361,18 +281,10 @@
         saveState();
         render();
       }
-      if (action === "toggleDirectory") {
-        state.data.settings.directoryCollapsed = !state.data.settings.directoryCollapsed;
-        saveState();
-        render();
-      }
       if (action === "prevTopic") moveTopic(-1);
       if (action === "nextTopic") moveTopic(1);
       if (action === "mastered") markTopic("mastered");
       if (action === "weak") markTopic("weak");
-      if (action === "prevQuiz") { state.currentQuiz = (state.currentQuiz - 1 + quiz.length) % quiz.length; render(); }
-      if (action === "nextQuiz") { state.currentQuiz = (state.currentQuiz + 1) % quiz.length; render(); }
-      if (action === "submitQuiz") submitQuiz(document.querySelector("[data-quiz-free]")?.value || "");
     }));
   }
 
